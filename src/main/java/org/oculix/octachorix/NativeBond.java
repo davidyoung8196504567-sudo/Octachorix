@@ -60,8 +60,20 @@ import java.util.Objects;
  *       makes the loaded library visible to subsequent {@code dlopen}
  *       calls, which is exactly what {@link #preload(Path)} exists to
  *       exploit.</li>
- *   <li><b>macOS / Windows:</b> default flags. The macOS flat namespace
- *       and the Windows loader handle this case without extra options.</li>
+ *   <li><b>macOS:</b> default flags, and {@link #preload(Path)} adds
+ *       nothing here. dyld uses a two-level namespace: every
+ *       {@code LC_LOAD_DYLIB} records the install name of the library
+ *       that provides it, and dyld resolves that path, not a symbol
+ *       pool. A preloaded Leptonica therefore cannot satisfy a
+ *       dependency recorded under another path. What makes the binding
+ *       correct on macOS is the {@code @loader_path/libleptonica.6.dylib}
+ *       install name rewritten into the bundled Tesseract at build time
+ *       (Legerix does this with {@code install_name_tool}), so the
+ *       dependency resolves next to the dylib we loaded by absolute
+ *       path.</li>
+ *   <li><b>Windows:</b> default flags. The loader searches the
+ *       directory of the DLL being loaded first, so the bundled
+ *       Leptonica next to the bundled Tesseract wins.</li>
  * </ul>
  */
 public final class NativeBond {
