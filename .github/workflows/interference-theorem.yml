@@ -1,9 +1,15 @@
-name: Interference theorem (Legerix#20) — Linux modern + legacy
+name: Interference theorem (Legerix#20) — Linux modern + legacy, macOS Intel
 
 # Runs the full Octachorix test suite against Legerix's bundled natives on
-# both Linux tiers, with an apt tesseract installed as the interfering
-# library. ScribeSystemInterferenceTest asserts that TessVersion() of the
-# loaded library is the bundled 5.5.0, never the system one.
+# both Linux tiers and the darwin (Intel) tier, with a system tesseract
+# installed as the interfering library: apt on Linux, brew on macOS.
+# ScribeSystemInterferenceTest asserts that TessVersion() of the loaded
+# library is the bundled 5.5.0, never the system one.
+#
+# Release assets are named extension-last on darwin
+# (libtesseract.5-darwin.dylib) and tier-last on Linux
+# (libtesseract.so.5-linux-x86-64), hence the per-tier asset and local
+# file names in the matrix.
 
 on:
   workflow_dispatch:
@@ -19,11 +25,25 @@ jobs:
         include:
           - tier: linux-x86-64
             os: ubuntu-24.04
+            tesseract_asset: libtesseract.so.5-linux-x86-64
+            leptonica_asset: libleptonica.so.6-linux-x86-64
+            tesseract: libtesseract.so.5
+            leptonica: libleptonica.so.6
           - tier: linux-x86-64-legacy
             os: ubuntu-22.04
+            tesseract_asset: libtesseract.so.5-linux-x86-64-legacy
+            leptonica_asset: libleptonica.so.6-linux-x86-64-legacy
+            tesseract: libtesseract.so.5
+            leptonica: libleptonica.so.6
+          - tier: darwin
+            os: macos-15-intel
+            tesseract_asset: libtesseract.5-darwin.dylib
+            leptonica_asset: libleptonica.6-darwin.dylib
+            tesseract: libtesseract.5.dylib
+            leptonica: libleptonica.6.dylib
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.tier }} + apt tesseract
+    name: ${{ matrix.tier }} + system tesseract
 
     steps:
       - uses: actions/checkout@v4
@@ -43,21 +63,30 @@ jobs:
       - name: Stage Legerix natives (${{ matrix.tier }}) from v5.5.0-9-DO-NOT-USE
         run: |
           mkdir -p natives
-          curl -sSL -o natives/libtesseract.so.5 https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/libtesseract.so.5-${{ matrix.tier }}
-          curl -sSL -o natives/libleptonica.so.6 https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/libleptonica.so.6-${{ matrix.tier }}
+          curl -sSL -o natives/${{ matrix.tesseract }} https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/${{ matrix.tesseract_asset }}
+          curl -sSL -o natives/${{ matrix.leptonica }} https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/${{ matrix.leptonica_asset }}
           bash legerix/scripts/fetch-traineddata.sh tessdata
+          ls -la natives/
 
-      - name: Install system Tesseract (apt)
+      - name: Install system Tesseract (Linux — apt)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update -q
           sudo apt-get install -q -y tesseract-ocr
           tesseract --version 2>&1 | head -1
 
+      - name: Install system Tesseract (macOS — brew)
+        if: runner.os == 'macOS'
+        run: |
+          brew install tesseract
+          tesseract --version 2>&1 | head -1
+          ls -la "$(brew --prefix)"/lib/libtesseract* "$(brew --prefix)"/lib/libleptonica* || true
+
       - name: mvn test
         run: >
           mvn -B test
-          -DargLine="-Doctachorix.test.libs.tesseract=${{ github.workspace }}/natives/libtesseract.so.5
-          -Doctachorix.test.libs.leptonica=${{ github.workspace }}/natives/libleptonica.so.6
+          -DargLine="-Doctachorix.test.libs.tesseract=${{ github.workspace }}/natives/${{ matrix.tesseract }}
+          -Doctachorix.test.libs.leptonica=${{ github.workspace }}/natives/${{ matrix.leptonica }}
           -Doctachorix.test.libs.tessdata=${{ github.workspace }}/tessdata
           -Doctachorix.test.expectedVersion=5.5.0"
 
