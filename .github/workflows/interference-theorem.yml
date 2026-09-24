@@ -4,7 +4,7 @@ name: Interference theorem (Legerix#20) — Linux modern + legacy, macOS Intel
 # both Linux tiers and the darwin (Intel) tier, with a system tesseract
 # installed as the interfering library: apt on Linux, brew on macOS.
 # ScribeSystemInterferenceTest asserts that TessVersion() of the loaded
-# library is the bundled 5.5.0, never the system one.
+# library is the bundled 5.5.2, never the system one.
 #
 # Release assets are named extension-last on darwin
 # (libtesseract.5-darwin.dylib) and tier-last on Linux
@@ -60,11 +60,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Stage Legerix natives (${{ matrix.tier }}) from v5.5.0-9-DO-NOT-USE
+      - name: Stage Legerix natives (${{ matrix.tier }}) from v5.5.2-2-DO-NOT-USE
         run: |
           mkdir -p natives
-          curl -sSL -o natives/${{ matrix.tesseract }} https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/${{ matrix.tesseract_asset }}
-          curl -sSL -o natives/${{ matrix.leptonica }} https://github.com/oculix-org/Legerix/releases/download/v5.5.0-9-DO-NOT-USE/${{ matrix.leptonica_asset }}
+          curl -sSL -o natives/${{ matrix.tesseract }} https://github.com/oculix-org/Legerix/releases/download/v5.5.2-2-DO-NOT-USE/${{ matrix.tesseract_asset }}
+          curl -sSL -o natives/${{ matrix.leptonica }} https://github.com/oculix-org/Legerix/releases/download/v5.5.2-2-DO-NOT-USE/${{ matrix.leptonica_asset }}
           bash legerix/scripts/fetch-traineddata.sh tessdata
           ls -la natives/
 
@@ -88,7 +88,7 @@ jobs:
           -DargLine="-Doctachorix.test.libs.tesseract=${{ github.workspace }}/natives/${{ matrix.tesseract }}
           -Doctachorix.test.libs.leptonica=${{ github.workspace }}/natives/${{ matrix.leptonica }}
           -Doctachorix.test.libs.tessdata=${{ github.workspace }}/tessdata
-          -Doctachorix.test.expectedVersion=5.5.0"
+          -Doctachorix.test.expectedVersion=5.5.2"
 
       - uses: actions/upload-artifact@v4
         if: failure()
