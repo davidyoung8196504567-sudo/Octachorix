@@ -19,10 +19,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * The theorem the whole project exists to prove.
  *
- * <p>Setup: a Linux host with a system Tesseract installed at
- * {@code /usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3} (or similar),
- * plus a bundled Tesseract (typically provisioned by Legerix into
- * {@code ~/.cache/legerix/...}) whose absolute path we hand to
+ * <p>Setup: a host with a system Tesseract installed next to ours,
+ * {@code /usr/lib/x86_64-linux-gnu/libtesseract.so.5.0.3} from apt on
+ * Linux or {@code /opt/homebrew/lib/libtesseract.5.dylib} from Homebrew
+ * on macOS, plus a bundled Tesseract (typically provisioned by Legerix
+ * into {@code ~/.cache/legerix/...}) whose absolute path we hand to
  * {@link Scribe.Builder#tesseractLibrary(Path)}.
  *
  * <p>Claim: only the bundled library is used. The system one, however
@@ -46,9 +47,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  *   -Doctachorix.test.expectedVersion=5.5.0
  * </pre>
  *
- * <p>The test is skipped on non-Linux hosts (the theorem is
- * Linux-shaped) and when the system Tesseract is absent (there is
- * nothing to interfere with).
+ * <p>The test is skipped when no system Tesseract is found in the
+ * usual apt or Homebrew locations (there is nothing to interfere
+ * with). On Linux the bundled library wins because {@code preload()}
+ * opens Leptonica with {@code RTLD_GLOBAL}; on macOS it wins because
+ * the bundled dylibs carry {@code @loader_path} install names. Both
+ * mechanisms are proved by the same assertion.
  */
 class ScribeSystemInterferenceTest {
 
@@ -59,11 +63,6 @@ class ScribeSystemInterferenceTest {
 
     @BeforeAll
     static void loadPathsOrSkip() {
-        String os = System.getProperty("os.name", "").toLowerCase();
-        assumeTrue(os.contains("linux"),
-                () -> "System-interference test is Linux-only "
-                        + "(this host is: " + os + ")");
-
         String t = System.getProperty("octachorix.test.libs.tesseract");
         String l = System.getProperty("octachorix.test.libs.leptonica");
         String d = System.getProperty("octachorix.test.libs.tessdata");
@@ -77,8 +76,8 @@ class ScribeSystemInterferenceTest {
 
         assumeTrue(systemTesseractPresent(),
                 () -> "System-interference test skipped — no system Tesseract "
-                        + "found in /usr/lib*. Nothing to interfere with, "
-                        + "the theorem holds vacuously.");
+                        + "found in /usr/lib*, /usr/local/lib or /opt/homebrew/lib. "
+                        + "Nothing to interfere with, the theorem holds vacuously.");
 
         tesseractLib = Paths.get(t);
         leptonicaLib = Paths.get(l);
@@ -123,6 +122,8 @@ class ScribeSystemInterferenceTest {
                 "/usr/lib/libtesseract.so.4",
                 "/usr/local/lib/libtesseract.so.5",
                 "/usr/local/lib/libtesseract.so.4",
+                "/opt/homebrew/lib/libtesseract.5.dylib",
+                "/usr/local/lib/libtesseract.5.dylib",
         };
         for (String c : candidates) {
             if (Files.exists(Paths.get(c))) {
