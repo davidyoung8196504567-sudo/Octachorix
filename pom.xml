@@ -59,7 +59,7 @@
              mechanism as OculiX). A release bump is this one line. The
              flatten-maven-plugin below writes the concrete value into
              .flattened-pom.xml so Maven Central consumers never see ${revision}. -->
-        <revision>1.0.0</revision>
+        <revision>1.0.1</revision>
 
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
