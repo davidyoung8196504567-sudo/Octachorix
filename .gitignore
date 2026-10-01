@@ -36,3 +36,7 @@ core.*
 # Local test override (native lib paths per developer)
 *.local.properties
 octachorix.test.local
+
+# Local benches and their inputs; only ExtractText ships as the demo
+demo/*
+!demo/ExtractText.java
