@@ -214,7 +214,8 @@ public final class NativeBond {
             String file = name == null ? null : name.getString(0);
             return file == null || file.isEmpty()
                     ? Optional.empty() : Optional.of(Path.of(file));
-        } catch (UnsatisfiedLinkError e) {
+        } catch (UnsatisfiedLinkError | RuntimeException e) {
+            // A diagnostic: it reports nothing rather than fail the caller.
             return Optional.empty();
         }
     }
